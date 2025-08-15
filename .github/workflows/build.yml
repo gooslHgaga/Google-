@@ -26,7 +26,7 @@ jobs:
                             openjdk-11-jdk unzip zlib1g-dev libffi-dev wget
         pip install --upgrade cython buildozer virtualenv
 
-    - name: Prepare Android SDK inside Buildozer path
+    - name: Prepare Android SDK and NDK
       run: |
         mkdir -p .buildozer/android/platform
         cd .buildozer/android/platform
@@ -48,21 +48,23 @@ jobs:
         # قبول جميع التراخيص تلقائيًا
         yes | sdkmanager --licenses || true
 
-        # تثبيت الإصدارات المطلوبة
-        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        # تثبيت الأدوات المطلوبة
+        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;28.0.3"
 
-    - name: Configure Buildozer to use prepared SDK
+    - name: Configure Buildozer to use prepared SDK and NDK
       run: |
         sed -i 's|# android.sdk_path =|android.sdk_path = .buildozer/android/platform/android-sdk|' buildozer.spec
+        sed -i 's|# android.ndk_path =|android.ndk_path = .buildozer/android/platform/android-sdk/ndk/28.0.3|' buildozer.spec
         sed -i 's|# android.accept_sdk_license = False|android.accept_sdk_license = True|' buildozer.spec
         echo "sdk.dir=$(pwd)/.buildozer/android/platform/android-sdk" > local.properties
 
     - name: Build APK with Buildozer
       env:
         ANDROIDSDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
-        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b
+        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk/ndk/28.0.3
       run: |
         export ANDROID_SDK_ROOT=$ANDROIDSDK
+        export ANDROID_NDK_HOME=$ANDROIDNDK
         export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
         buildozer android debug
 
