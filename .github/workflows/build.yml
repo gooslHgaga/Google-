@@ -23,8 +23,9 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y python3-pip python3-dev git build-essential \
-                            openjdk-11-jdk unzip zlib1g-dev libffi-dev wget
-        pip install --upgrade cython buildozer virtualenv
+                            openjdk-11-jdk unzip zlib1g-dev libffi-dev wget \
+                            autoconf automake libtool pkg-config
+        pip install --upgrade cython buildozer virtualenv python-for-android
 
     - name: Prepare Android SDK and NDK
       run: |
@@ -72,6 +73,12 @@ jobs:
         export ANDROID_SDK_ROOT=$ANDROIDSDK
         export ANDROID_NDK_HOME=$ANDROIDNDK
         export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+
+        # إعادة توليد ملفات autotools لتجنب LT_SYS_SYMBOL_USCORE
+        cd ~/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a || true
+        autoreconf -fi || true
+        cd $GITHUB_WORKSPACE
+
         buildozer android debug
 
     - name: Upload APK artifact
