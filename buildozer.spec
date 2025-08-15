@@ -58,6 +58,9 @@ android.ndk = 25b
 # (int) Android NDK API to use. This is the minimum API your app will support.
 android.ndk_api = 21
 
+# (str) Android build-tools version
+android.build_tools_version = 33.0.2
+
 # (bool) Android logcat filters to include in log output
 android.logcat_filters = *:S python:D
 
