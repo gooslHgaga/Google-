@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest  # استخدام Docker جاهز يحتوي على Buildozer وAndroid SDK/NDK
 
     steps:
     - name: Checkout repository
@@ -21,23 +23,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt update
-        sudo apt install -y python3-pip python3-dev git build-essential \
-                            openjdk-11-jdk unzip zlib1g-dev libffi-dev
         pip install --upgrade cython buildozer virtualenv
-
-    - name: Accept Android SDK licenses
-      run: |
-        mkdir -p $HOME/Android/Sdk
-        yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
     - name: Build APK with Buildozer
       run: |
-        cd ${{ github.workspace }}
+        cd $GITHUB_WORKSPACE
         buildozer android debug
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: calculator-apk
-        path: ${{ github.workspace }}/bin/**/*.apk
+        path: $GITHUB_WORKSPACE/bin/**/*.apk
