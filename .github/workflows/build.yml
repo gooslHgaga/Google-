@@ -9,8 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: kivy/buildozer:latest  # استخدام Docker جاهز يحتوي على Buildozer وAndroid SDK/NDK
 
     steps:
     - name: Checkout repository
@@ -23,7 +21,21 @@ jobs:
 
     - name: Install dependencies
       run: |
+        sudo apt update
+        sudo apt install -y python3-pip python3-dev git build-essential \
+                            openjdk-11-jdk unzip zlib1g-dev libffi-dev wget
         pip install --upgrade cython buildozer virtualenv
+
+        # تحميل SDK Tools
+        mkdir -p $HOME/Android/Sdk/cmdline-tools
+        cd $HOME/Android/Sdk/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip
+        mv cmdline-tools latest
+        yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+
+        # تثبيت أدوات Build-Tools وplatforms المطلوبة
+        $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
     - name: Build APK with Buildozer
       run: |
