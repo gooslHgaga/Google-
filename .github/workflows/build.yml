@@ -19,38 +19,42 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install dependencies and Android SDK
+    - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y python3-pip python3-dev git build-essential \
                             openjdk-11-jdk unzip zlib1g-dev libffi-dev wget
         pip install --upgrade cython buildozer virtualenv
 
-        # تحميل SDK Tools
-        mkdir -p $HOME/Android/Sdk/cmdline-tools
-        cd $HOME/Android/Sdk/cmdline-tools
+    - name: Pre-install Android SDK in Buildozer folder
+      run: |
+        mkdir -p .buildozer/android/platform
+        cd .buildozer/android/platform
+        # تنزيل أدوات Android SDK
+        mkdir -p android-sdk/cmdline-tools
+        cd android-sdk/cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip cmdline-tools.zip
         mv cmdline-tools latest
-
-        # قبول تراخيص Android SDK
-        yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-
-        # تثبيت أدوات Build-Tools وplatforms المطلوبة (نسخة مدعومة)
-        $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
-
-    - name: Set environment variables for Buildozer
-      run: |
-        echo "export ANDROID_SDK_ROOT=$HOME/Android/Sdk" >> $GITHUB_ENV
-        echo "export PATH=$HOME/Android/Sdk/platform-tools:$HOME/Android/Sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+        cd ../..
+        export ANDROID_SDK_ROOT=$PWD/android-sdk
+        export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+        # قبول التراخيص
+        yes | sdkmanager --licenses
+        # تثبيت build-tools و platform المطلوبة
+        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
     - name: Build APK with Buildozer
+      env:
+        ANDROIDSDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
+        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b
       run: |
-        cd $GITHUB_WORKSPACE
+        export ANDROID_SDK_ROOT=$ANDROIDSDK
+        export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
         buildozer android debug
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: calculator-apk
-        path: $GITHUB_WORKSPACE/bin/**/*.apk
+        path: bin/**/*.apk
