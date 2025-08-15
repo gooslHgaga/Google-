@@ -14,21 +14,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install dependencies
+    - name: Build APK using Docker
       run: |
-        sudo apt update
-        sudo apt install -y python3-pip python3-dev git build-essential
-        pip install --upgrade cython buildozer virtualenv
-
-    - name: Build APK
-      run: |
-        docker run --rm -v ${{ github.workspace }}:/app python-for-android bash -c "
-          pip install buildozer &&
+        docker run --rm -v ${{ github.workspace }}:/app kivy/buildozer:latest bash -c "
           cd /app &&
           buildozer android debug
         "
