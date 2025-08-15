@@ -59,7 +59,7 @@ android.ndk = 25b
 android.ndk_api = 21
 
 # (str) Android build-tools version
-android.build_tools_version = 33.0.2
+android.build_tools_version = 34.0.0
 
 # (bool) Android logcat filters to include in log output
 android.logcat_filters = *:S python:D
