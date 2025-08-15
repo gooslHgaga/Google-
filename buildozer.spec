@@ -42,7 +42,7 @@ jobs:
         mv cmdline-tools latest
         cd ../..
 
-        # تحميل NDK r25b
+        # تحميل NDK r25b مباشرة
         mkdir -p android-ndk-r25b
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O android-ndk-r25b.zip
         unzip android-ndk-r25b.zip -d android-ndk-r25b
@@ -52,20 +52,17 @@ jobs:
         export ANDROID_NDK_HOME=$PWD/android-ndk-r25b/android-ndk-r25b
         export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
-        # قبول تراخيص SDK تلقائيًا
+        # قبول جميع التراخيص تلقائيًا
         yes | sdkmanager --licenses || true
 
         # تثبيت الأدوات المطلوبة
-        sdkmanager --install "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-    - name: Configure Buildozer to use SDK and NDK
+    - name: Configure Buildozer to use prepared SDK and NDK
       run: |
         sed -i 's|# android.sdk_path =|android.sdk_path = .buildozer/android/platform/android-sdk|' buildozer.spec
         sed -i 's|# android.ndk_path =|android.ndk_path = .buildozer/android/platform/android-ndk-r25b/android-ndk-r25b|' buildozer.spec
         sed -i 's|# android.accept_sdk_license = False|android.accept_sdk_license = True|' buildozer.spec
-        sed -i 's|android.api = .*|android.api = 33|' buildozer.spec
-        sed -i 's|android.minapi = .*|android.minapi = 21|' buildozer.spec
-        sed -i 's|android.ndk = .*|android.ndk = 25b|' buildozer.spec
         echo "sdk.dir=$(pwd)/.buildozer/android/platform/android-sdk" > local.properties
 
     - name: Build APK with Buildozer
@@ -77,7 +74,7 @@ jobs:
         export ANDROID_NDK_HOME=$ANDROIDNDK
         export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
-        # توليد ملفات autotools لتجنب مشاكل LT_SYS_SYMBOL_USCORE
+        # إعادة توليد ملفات autotools لتجنب LT_SYS_SYMBOL_USCORE
         cd ~/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a || true
         autoreconf -fi || true
         cd $GITHUB_WORKSPACE
@@ -87,5 +84,5 @@ jobs:
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: myapp-apk
+        name: calculator-apk
         path: bin/**/*.apk
