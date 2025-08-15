@@ -36,7 +36,7 @@ jobs:
         # قبول تراخيص Android SDK
         yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-        # تثبيت أدوات Build-Tools وplatforms المطلوبة
+        # تثبيت أدوات Build-Tools وplatforms المطلوبة (نسخة مدعومة)
         $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
     - name: Set environment variables for Buildozer
