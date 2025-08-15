@@ -1,90 +1,88 @@
-[app]
+name: Build APK with Buildozer
 
-# (str) Title of your application
-title = My Application
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-# (str) Package name
-package.name = myapp
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-# (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-# (str) Source code where the main.py lives
-source.dir = .
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-# (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y python3-pip python3-dev git build-essential \
+                            openjdk-11-jdk unzip zlib1g-dev libffi-dev wget \
+                            autoconf automake libtool pkg-config
+        pip install --upgrade cython buildozer virtualenv python-for-android
 
-# (list) Source files to exclude (let empty to not exclude anything)
-source.exclude_exts = spec
+    - name: Prepare Android SDK and NDK
+      run: |
+        mkdir -p .buildozer/android/platform
+        cd .buildozer/android/platform
 
-# (list) List of directory to exclude (let empty to not exclude anything)
-source.exclude_dirs = tests, bin, venv
+        # إنشاء مجلد SDK
+        mkdir -p android-sdk/cmdline-tools
+        cd android-sdk/cmdline-tools
 
-# (str) Application version
-version = 0.1
+        # تحميل أدوات SDK
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip
+        mv cmdline-tools latest
+        cd ../..
 
-# (list) Application requirements
-requirements = python3==3.11.13,kivy==2.3.1
+        # تحميل NDK r25b مباشرة
+        mkdir -p android-ndk-r25b
+        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O android-ndk-r25b.zip
+        unzip android-ndk-r25b.zip -d android-ndk-r25b
 
-# (str) Presplash of the application
-#presplash.filename = %(source.dir)s/data/presplash.png
+        # ضبط متغيرات البيئة
+        export ANDROID_SDK_ROOT=$PWD/android-sdk
+        export ANDROID_NDK_HOME=$PWD/android-ndk-r25b/android-ndk-r25b
+        export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
-# (str) Icon of the application
-#icon.filename = %(source.dir)s/data/icon.png
+        # قبول جميع تراخيص SDK تلقائيًا
+        yes | sdkmanager --licenses || true
 
-# (list) Supported orientations
-orientation = portrait
+        # تثبيت الأدوات المطلوبة (متوافقة مع android.api=33)
+        sdkmanager --install "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-# (bool) Indicate if the application should be fullscreen or not
-fullscreen = 0
+    - name: Configure Buildozer to use prepared SDK and NDK
+      run: |
+        sed -i 's|# android.sdk_path =|android.sdk_path = .buildozer/android/platform/android-sdk|' buildozer.spec
+        sed -i 's|# android.ndk_path =|android.ndk_path = .buildozer/android/platform/android-ndk-r25b/android-ndk-r25b|' buildozer.spec
+        sed -i 's|# android.accept_sdk_license = False|android.accept_sdk_license = True|' buildozer.spec
+        echo "sdk.dir=$(pwd)/.buildozer/android/platform/android-sdk" > local.properties
 
-#
-# Android specific
-#
+    - name: Build APK with Buildozer
+      env:
+        ANDROIDSDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
+        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b/android-ndk-r25b
+      run: |
+        export ANDROID_SDK_ROOT=$ANDROIDSDK
+        export ANDROID_NDK_HOME=$ANDROIDNDK
+        export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
-# (int) Target Android API, should be as high as possible.
-android.api = 33
+        # إعادة توليد ملفات autotools لتجنب LT_SYS_SYMBOL_USCORE
+        cd ~/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a || true
+        autoreconf -fi || true
+        cd $GITHUB_WORKSPACE
 
-# (int) Minimum API your APK will support
-android.minapi = 21
+        buildozer android debug
 
-# (int) Android SDK version to use
-android.sdk = 33
-
-# (str) Android NDK version to use
-android.ndk = 25b
-
-# (int) Android NDK API to use. This is the minimum API your app will support.
-android.ndk_api = 21
-
-# (str) Android build-tools version
-android.build_tools_version = 34.0.0
-
-# (bool) Android logcat filters to include in log output
-android.logcat_filters = *:S python:D
-
-# (list) Permissions
-android.permissions = INTERNET
-
-# (list) Features
-#android.features = android.hardware.usb.host
-
-# (str) Presplash background color (for android toolchain)
-#android.presplash_color = #FFFFFF
-
-# (str) Adaptive icon of the application (used if Android API level is 26+ at runtime)
-#icon.adaptive_foreground.filename = %(source.dir)s/data/icon_fg.png
-#icon.adaptive_background.filename = %(source.dir)s/data/icon_bg.png
-
-#
-# OSX Specific
-#
-osx.python_version = 3
-osx.kivy_version = 1.9.1
-
-#
-# Buildozer logging and debug
-#
-log_level = 2
-warn_on_root = 1
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: myapp-apk
+        path: bin/**/*.apk
