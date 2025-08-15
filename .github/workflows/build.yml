@@ -23,8 +23,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y python3-pip python3-dev git build-essential \
-                            openjdk-11-jdk unzip zlib1g-dev \
-                            libncurses6 libncurses6-dev libffi-dev
+                            openjdk-11-jdk unzip zlib1g-dev libffi-dev
         pip install --upgrade cython buildozer virtualenv
 
     - name: Build APK with Buildozer
