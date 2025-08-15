@@ -23,7 +23,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y python3-pip python3-dev git build-essential
-        pip install --upgrade cython buildozer
+        pip install --upgrade cython buildozer virtualenv
 
     - name: Build APK with Buildozer
       uses: ArtemSBulgakov/buildozer-action@v1
@@ -36,4 +36,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: calculator-apk
-        path: ${{ github.workspace }}/bin/*.apk
+        path: ${{ github.workspace }}/bin/**/*.apk
