@@ -26,23 +26,36 @@ jobs:
                             openjdk-11-jdk unzip zlib1g-dev libffi-dev wget
         pip install --upgrade cython buildozer virtualenv
 
-    - name: Pre-install Android SDK in Buildozer folder
+    - name: Prepare Android SDK inside Buildozer path
       run: |
         mkdir -p .buildozer/android/platform
         cd .buildozer/android/platform
-        # تنزيل أدوات Android SDK
+
+        # إنشاء مجلد SDK
         mkdir -p android-sdk/cmdline-tools
         cd android-sdk/cmdline-tools
+
+        # تحميل أدوات SDK
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip cmdline-tools.zip
         mv cmdline-tools latest
         cd ../..
+
+        # ضبط متغيرات البيئة
         export ANDROID_SDK_ROOT=$PWD/android-sdk
         export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-        # قبول التراخيص
-        yes | sdkmanager --licenses
-        # تثبيت build-tools و platform المطلوبة
-        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+
+        # قبول جميع التراخيص تلقائيًا
+        yes | sdkmanager --licenses || true
+
+        # تثبيت الإصدارات المطلوبة
+        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+    - name: Configure Buildozer to use prepared SDK
+      run: |
+        sed -i 's|# android.sdk_path =|android.sdk_path = .buildozer/android/platform/android-sdk|' buildozer.spec
+        sed -i 's|# android.accept_sdk_license = False|android.accept_sdk_license = True|' buildozer.spec
+        echo "sdk.dir=$(pwd)/.buildozer/android/platform/android-sdk" > local.properties
 
     - name: Build APK with Buildozer
       env:
