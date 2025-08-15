@@ -1,5 +1,3 @@
-```yaml
-# .github/workflows/build.yml
 name: Build APK with Buildozer
 
 on:
@@ -23,15 +21,12 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          python3-pip python3-dev git build-essential \
-          openjdk-11-jdk unzip zlib1g-dev libffi-dev wget \
-          autoconf automake libtool libltdl-dev pkg-config
-
-        # ✅ إصلاح الماكرو المفقود بشكل صحيح
+        sudo apt update
+        sudo apt install -y python3-pip python3-dev git build-essential \
+                            openjdk-11-jdk unzip zlib1g-dev libffi-dev wget \
+                            autoconf automake libtool libltdl-dev pkg-config
+        # ✅ إصلاح الماكرو المفقود LT_SYS_SYMBOL_USCORE
         echo 'AC_DEFUN([LT_SYS_SYMBOL_USCORE], [])' | sudo tee /usr/share/aclocal/lt_sys_symbol_underscore.m4 > /dev/null
-
         pip install --upgrade cython buildozer virtualenv python-for-android
 
     - name: Prepare Android SDK and NDK
@@ -39,7 +34,6 @@ jobs:
         mkdir -p .buildozer/android/platform
         cd .buildozer/android/platform
 
-        # SDK
         mkdir -p android-sdk/cmdline-tools
         cd android-sdk/cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
@@ -47,13 +41,12 @@ jobs:
         mv cmdline-tools latest
         cd ../..
 
-        # NDK
+        mkdir -p android-ndk-r25b
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O android-ndk-r25b.zip
-        unzip android-ndk-r25b.zip   # يستخرج المجلد android-ndk-r25b
+        unzip android-ndk-r25b.zip -d android-ndk-r25b
 
-        # تسجيل المتغيرات
         export ANDROID_SDK_ROOT=$PWD/android-sdk
-        export ANDROID_NDK_HOME=$PWD/android-ndk-r25b
+        export ANDROID_NDK_HOME=$PWD/android-ndk-r25b/android-ndk-r25b
         export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
         yes | sdkmanager --licenses || true
@@ -61,15 +54,15 @@ jobs:
 
     - name: Configure Buildozer to use prepared SDK and NDK
       run: |
-        sed -i 's|^# android.sdk_path =.*|android.sdk_path = '"$(pwd)"'/.buildozer/android/platform/android-sdk|' buildozer.spec
-        sed -i 's|^# android.ndk_path =.*|android.ndk_path = '"$(pwd)"'/.buildozer/android/platform/android-ndk-r25b|' buildozer.spec
-        sed -i 's|^# android.accept_sdk_license =.*|android.accept_sdk_license = True|' buildozer.spec
+        sed -i 's|# android.sdk_path =|android.sdk_path = .buildozer/android/platform/android-sdk|' buildozer.spec
+        sed -i 's|# android.ndk_path =|android.ndk_path = .buildozer/android/platform/android-ndk-r25b/android-ndk-r25b|' buildozer.spec
+        sed -i 's|# android.accept_sdk_license = False|android.accept_sdk_license = True|' buildozer.spec
         echo "sdk.dir=$(pwd)/.buildozer/android/platform/android-sdk" > local.properties
 
     - name: Build APK with Buildozer
       env:
         ANDROIDSDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
-        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b
+        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b/android-ndk-r25b
       run: |
         export ANDROID_SDK_ROOT=$ANDROIDSDK
         export ANDROID_NDK_HOME=$ANDROIDNDK
@@ -82,4 +75,3 @@ jobs:
       with:
         name: myapp-apk
         path: bin/**/*.apk
-```
