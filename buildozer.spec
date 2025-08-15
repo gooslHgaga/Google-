@@ -1,88 +1,25 @@
-name: Build APK with Buildozer
+[app]
+title = MyApp
+package.name = myapp
+package.domain = org.example
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas
+requirements = python3==3.11.13,kivy==2.3.1
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+# API level target
+android.api = 33
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# الحد الأدنى من API
+android.minapi = 21
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+# إصدار NDK
+android.ndk = 25b
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+# قبول تراخيص SDK تلقائيًا
+android.accept_sdk_license = True
 
-    - name: Install system dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y python3-pip python3-dev git build-essential \
-                            openjdk-11-jdk unzip zlib1g-dev libffi-dev wget \
-                            autoconf automake libtool pkg-config
-        pip install --upgrade cython buildozer virtualenv python-for-android
+orientation = portrait
 
-    - name: Prepare Android SDK and NDK
-      run: |
-        mkdir -p .buildozer/android/platform
-        cd .buildozer/android/platform
-
-        # إنشاء مجلد SDK
-        mkdir -p android-sdk/cmdline-tools
-        cd android-sdk/cmdline-tools
-
-        # تحميل أدوات SDK
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-        unzip cmdline-tools.zip
-        mv cmdline-tools latest
-        cd ../..
-
-        # تحميل NDK r25b مباشرة
-        mkdir -p android-ndk-r25b
-        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O android-ndk-r25b.zip
-        unzip android-ndk-r25b.zip -d android-ndk-r25b
-
-        # ضبط متغيرات البيئة
-        export ANDROID_SDK_ROOT=$PWD/android-sdk
-        export ANDROID_NDK_HOME=$PWD/android-ndk-r25b/android-ndk-r25b
-        export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-
-        # قبول جميع التراخيص تلقائيًا
-        yes | sdkmanager --licenses || true
-
-        # تثبيت الأدوات المطلوبة
-        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-    - name: Configure Buildozer to use prepared SDK and NDK
-      run: |
-        sed -i 's|# android.sdk_path =|android.sdk_path = .buildozer/android/platform/android-sdk|' buildozer.spec
-        sed -i 's|# android.ndk_path =|android.ndk_path = .buildozer/android/platform/android-ndk-r25b/android-ndk-r25b|' buildozer.spec
-        sed -i 's|# android.accept_sdk_license = False|android.accept_sdk_license = True|' buildozer.spec
-        echo "sdk.dir=$(pwd)/.buildozer/android/platform/android-sdk" > local.properties
-
-    - name: Build APK with Buildozer
-      env:
-        ANDROIDSDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
-        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b/android-ndk-r25b
-      run: |
-        export ANDROID_SDK_ROOT=$ANDROIDSDK
-        export ANDROID_NDK_HOME=$ANDROIDNDK
-        export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-
-        # إعادة توليد ملفات autotools لتجنب LT_SYS_SYMBOL_USCORE
-        cd ~/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a || true
-        autoreconf -fi || true
-        cd $GITHUB_WORKSPACE
-
-        buildozer android debug
-
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: calculator-apk
-        path: bin/**/*.apk
+[buildozer]
+log_level = 2
+warn_on_root = 1
