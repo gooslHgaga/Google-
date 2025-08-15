@@ -48,8 +48,11 @@ jobs:
         # قبول جميع التراخيص تلقائيًا
         yes | sdkmanager --licenses || true
 
-        # تثبيت الإصدارات المطلوبة
+        # تثبيت الأدوات المطلوبة
         sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+        # تثبيت NDK لتفادي أخطاء AIDL
+        sdkmanager --install "ndk;25.1.8937393"
 
     - name: Configure Buildozer to use prepared SDK
       run: |
@@ -60,9 +63,10 @@ jobs:
     - name: Build APK with Buildozer
       env:
         ANDROIDSDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
-        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b
+        ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk/ndk/25.1.8937393
       run: |
         export ANDROID_SDK_ROOT=$ANDROIDSDK
+        export ANDROID_NDK_HOME=$ANDROIDNDK
         export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
         buildozer android debug
 
