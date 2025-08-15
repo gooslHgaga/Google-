@@ -1,0 +1,39 @@
+name: Build APK with Buildozer
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y python3-pip python3-dev git build-essential
+        pip install --upgrade cython buildozer
+
+    - name: Build APK with Buildozer
+      uses: ArtemSBulgakov/buildozer-action@v1
+      id: buildozer
+      with:
+        command: android debug
+        buildozer_version: master
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: calculator-apk
+        path: ${{ github.workspace }}/bin/*.apk
