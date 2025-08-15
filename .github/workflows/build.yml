@@ -26,6 +26,11 @@ jobs:
                             openjdk-11-jdk unzip zlib1g-dev libffi-dev
         pip install --upgrade cython buildozer virtualenv
 
+    - name: Accept Android SDK licenses
+      run: |
+        mkdir -p $HOME/Android/Sdk
+        yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
     - name: Build APK with Buildozer
       run: |
         cd ${{ github.workspace }}
