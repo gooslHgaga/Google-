@@ -32,40 +32,29 @@ jobs:
         mkdir -p .buildozer/android/platform
         cd .buildozer/android/platform
 
-        # إنشاء مجلد SDK
         mkdir -p android-sdk/cmdline-tools
         cd android-sdk/cmdline-tools
-
-        # تحميل أدوات SDK
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip cmdline-tools.zip
         mv cmdline-tools latest
         cd ../..
 
-        # تحميل NDK r25b
         mkdir -p android-ndk-r25b
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O android-ndk-r25b.zip
         unzip android-ndk-r25b.zip -d android-ndk-r25b
 
-        # ضبط متغيرات البيئة
         export ANDROID_SDK_ROOT=$PWD/android-sdk
         export ANDROID_NDK_HOME=$PWD/android-ndk-r25b/android-ndk-r25b
         export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
-        # قبول تراخيص SDK تلقائيًا
         yes | sdkmanager --licenses || true
-
-        # تثبيت الأدوات المطلوبة
         sdkmanager --install "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-    - name: Configure Buildozer to use SDK and NDK
+    - name: Configure Buildozer to use prepared SDK and NDK
       run: |
         sed -i 's|# android.sdk_path =|android.sdk_path = .buildozer/android/platform/android-sdk|' buildozer.spec
         sed -i 's|# android.ndk_path =|android.ndk_path = .buildozer/android/platform/android-ndk-r25b/android-ndk-r25b|' buildozer.spec
         sed -i 's|# android.accept_sdk_license = False|android.accept_sdk_license = True|' buildozer.spec
-        sed -i 's|android.api = .*|android.api = 33|' buildozer.spec
-        sed -i 's|android.minapi = .*|android.minapi = 21|' buildozer.spec
-        sed -i 's|android.ndk = .*|android.ndk = 25b|' buildozer.spec
         echo "sdk.dir=$(pwd)/.buildozer/android/platform/android-sdk" > local.properties
 
     - name: Build APK with Buildozer
@@ -76,11 +65,6 @@ jobs:
         export ANDROID_SDK_ROOT=$ANDROIDSDK
         export ANDROID_NDK_HOME=$ANDROIDNDK
         export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-
-        # توليد ملفات autotools لتجنب مشاكل LT_SYS_SYMBOL_USCORE
-        cd ~/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a || true
-        autoreconf -fi || true
-        cd $GITHUB_WORKSPACE
 
         buildozer android debug
 
