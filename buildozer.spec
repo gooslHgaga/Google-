@@ -4,7 +4,7 @@ package.name = myapp
 package.domain = org.example
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-requirements = python3==3.11.13,kivy==2.3.1
+requirements = python3==3.11.13,kivy==2.3.1,pyjnius==1.6.1
 version = 0.1
 
 # API level target
